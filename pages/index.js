@@ -1,114 +1,236 @@
-import Head from 'next/head'
-import Image from 'next/image'
-import { Inter } from 'next/font/google'
-import styles from '@/styles/Home.module.css'
+// import { useEffect, useState } from "react";
+// import { ethers } from "ethers";
+// import { useWeb3React } from "@web3-react/core";
+// import { InjectedConnector } from "@web3-react/injected-connector";
+import { abi, contractAddress } from "../constants/config";
+import { useMoralis, useWeb3Contract } from "react-moralis";
 
-const inter = Inter({ subsets: ['latin'] })
+import { createHelia } from "helia";
+import { json } from "@helia/json";
 
 export default function Home() {
+  // FIRST METHOD
+  // const [isConnected, setIsConnect] = useState(false);
+  // const [signer, setSigner] = useState();
+
+  // async function connect() {
+  //   if (typeof window.ethereum !== "undefined") {
+  //     try {
+  //       await ethereum.request({ method: "eth_requestAccounts" });
+  //       setIsConnect(true);
+  //       let connectedProvider = new ethers.providers.Web3Provider(
+  //         window.ethereum
+  //       );
+  //       setSigner(connectedProvider.getSigner());
+  //     } catch (error) {
+  //       console.log(error);
+  //     }
+  //   } else {
+  //     setIsConnect(false);
+  //   }
+  // }
+
+  // async function execute() {
+  //   if (typeof window.ethereum !== "undefined") {
+  //     const contract = new ethers.Contract(contractAddress, abi, signer);
+  //     try {
+  //       console.log(await contract.storeFile("cid", "url"));
+  //       console.log(await contract.getFile("cid"));
+  //       console.log(await contract.getAllFiles());
+  //     } catch (error) {
+  //       console.log(error);
+  //     }
+  //   } else {
+  //     console.log("Please install metamask");
+  //   }
+  // }
+
+  // return (
+  //   <div>
+  //     {isConnected ? (
+  //       <>
+  //         "Connected"
+  //         <button id="executeBtn" onClick={() => execute()}>
+  //           Execute
+  //         </button>
+  //       </>
+  //     ) : (
+  //       <button onClick={() => connect()}>Connect</button>
+  //     )}
+  //   </div>
+  // );
+
+  // ------------------------------------------------------------------------------------------------------
+
+  // SECOND METHOD
+  // const injected = new InjectedConnector();
+  // const { activate, active, library: provider } = useWeb3React();
+
+  // async function connect() {
+  //   try {
+  //     await activate(injected);
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
+  // }
+
+  // async function execute() {
+  //   if (active) {
+  //     const signer = provider.getSigner();
+  //     const contract = new ethers.Contract(contractAddress, abi, signer);
+  //     try {
+  //       console.log(await contract.storeFile("cid", "url"));
+  //       console.log(await contract.getFile("cid"));
+  //       console.log(await contract.getAllFiles());
+  //     } catch (error) {
+  //       console.log(error);
+  //     }
+  //   }
+  // }
+
+  // return (
+  //   <div>
+  //     {active ? (
+  //       <>
+  //         "Connected"
+  //         <button onClick={() => execute()}>
+  //           Execute
+  //         </button>
+  //       </>
+  //     ) : (
+  //       <button onClick={() => connect()}>Connect</button>
+  //     )}
+  //   </div>
+  // );
+
+  // ------------------------------------------------------------------------------------------------------
+
+  // THIRD METHOD
+  const { enableWeb3, isWeb3Enabled } = useMoralis();
+  const { runContractFunction } = useWeb3Contract();
+
+  async function storeFileOnChain() {
+    if (
+      document.getElementById("name").value.length > 0 &&
+      document.getElementById("age").value.length > 0 &&
+      document.getElementById("gpa").value.length > 0 &&
+      document.getElementById("grade").value.length > 0
+    ) {
+      // CONSTRUCT OBJECT FROM INPUT FIELDS
+      const studentObj = {
+        name: document.getElementById("name").value,
+        age: document.getElementById("age").value,
+        gpa: document.getElementById("gpa").value,
+        grade: document.getElementById("grade").value,
+      };
+
+      // STORE IN HELIA IPFS
+      const heliaNode = await createHelia();
+      const jsonObj = json(heliaNode);
+      const cid = await jsonObj.add(studentObj);
+      const studentHelia = await jsonObj.get(cid);
+      heliaNode.stop();
+      const url = `http://ipfs.io/ipfs/${cid}`;
+      console.log(`CID (storeFile) => ${cid.toString()}`);
+      console.log(`URL (storeFile) => ${url}`);
+      console.log("Student Object => ", studentHelia);
+
+      // STORE IN SMART CONTRACT ON BLOCKCHAIN NETWORK
+      const storeFileOptions = {
+        abi: abi,
+        contractAddress: contractAddress,
+        functionName: "storeFile",
+        params: {
+          cid: cid.toString(),
+          url: url,
+        },
+      };
+      runContractFunction({
+        onSuccess: async (results) =>
+          console.log("Transaction Object => ", results),
+        params: storeFileOptions,
+      });
+
+      // SET CID FIELD TO VALUE
+      document.getElementById("cid").value = cid;
+    } else console.log("PLEASE FILL OUT INPUT FIELDS");
+  }
+
+  async function getFileOnChain() {
+    // GET FILE IN SMART CONTRACT ON BLOCKCHAIN
+    if (document.getElementById("cid").value !== undefined) {
+      const getFileOptions = {
+        abi: abi,
+        contractAddress: contractAddress,
+        functionName: "getFile",
+        params: {
+          cid: document.getElementById("cid").value,
+        },
+      };
+      runContractFunction({
+        onSuccess: (results) => console.log(`URL (getFile) => ${results}`),
+        params: getFileOptions,
+      });
+    } else console.log("EMPTY FIELD");
+  }
+
+  async function getAllFilesOnChain() {
+    // GET ALL FILES IN SMART CONTRACT ON BLOCKCHAIN
+    const getAllFilesOptions = {
+      abi: abi,
+      contractAddress: contractAddress,
+      functionName: "getAllFiles",
+    };
+    runContractFunction({
+      onSuccess: (results) => {
+        console.log("All Files (getAllFiles) => ");
+        for (let i = 0; i < results.length; i++) {
+          console.log(`${i} : ${results[i]}`);
+        }
+      },
+      params: getAllFilesOptions,
+    });
+  }
+
   return (
-    <>
-      <Head>
-        <title>Create Next App</title>
-        <meta name="description" content="Generated by create next app" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
-      <main className={`${styles.main} ${inter.className}`}>
-        <div className={styles.description}>
-          <p>
-            Get started by editing&nbsp;
-            <code className={styles.code}>pages/index.js</code>
-          </p>
-          <div>
-            <a
-              href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              By{' '}
-              <Image
-                src="/vercel.svg"
-                alt="Vercel Logo"
-                className={styles.vercelLogo}
-                width={100}
-                height={24}
-                priority
-              />
-            </a>
+    <div>
+      {isWeb3Enabled ? (
+        <>
+          <div id="storeFields">
+            <div>
+              <label>Name: </label>
+              <input type="text" id="name" size={15} />
+            </div>
+            <div>
+              <label>Age: </label>
+              <input type="text" id="age" size={1} />
+            </div>
+            <div>
+              <label>GPA: </label>
+              <input type="text" id="gpa" size={1} />
+            </div>
+            <div>
+              <label>Grade: </label>
+              <input type="text" id="grade" size={8} />
+            </div>
+            <button onClick={() => storeFileOnChain()}>Store File</button>
           </div>
-        </div>
-
-        <div className={styles.center}>
-          <Image
-            className={styles.logo}
-            src="/next.svg"
-            alt="Next.js Logo"
-            width={180}
-            height={37}
-            priority
-          />
-        </div>
-
-        <div className={styles.grid}>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2>
-              Docs <span>-&gt;</span>
-            </h2>
-            <p>
-              Find in-depth information about Next.js features and&nbsp;API.
-            </p>
-          </a>
-
-          <a
-            href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2>
-              Learn <span>-&gt;</span>
-            </h2>
-            <p>
-              Learn about Next.js in an interactive course with&nbsp;quizzes!
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2>
-              Templates <span>-&gt;</span>
-            </h2>
-            <p>
-              Discover and deploy boilerplate example Next.js&nbsp;projects.
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2>
-              Deploy <span>-&gt;</span>
-            </h2>
-            <p>
-              Instantly deploy your Next.js site to a shareable URL
-              with&nbsp;Vercel.
-            </p>
-          </a>
-        </div>
-      </main>
-    </>
-  )
+          <div id="getField">
+            <div>
+              <label>CID: </label>
+              <input type="text" id="cid" size={60} />
+            </div>
+            <div>
+              <button onClick={() => getFileOnChain()}>Get File</button>
+            </div>
+          </div>
+          <div>
+            <button onClick={() => getAllFilesOnChain()}>Get All Files</button>
+          </div>
+        </>
+      ) : (
+        <button onClick={() => enableWeb3()}>Connect</button>
+      )}
+    </div>
+  );
 }
