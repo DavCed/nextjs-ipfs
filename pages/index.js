@@ -7,6 +7,7 @@ import { useMoralis, useWeb3Contract } from "react-moralis";
 
 import { createHelia } from "helia";
 import { json } from "@helia/json";
+import { useState } from "react";
 
 export default function Home() {
   // FIRST METHOD
@@ -108,6 +109,11 @@ export default function Home() {
   // THIRD METHOD
   const { enableWeb3, isWeb3Enabled } = useMoralis();
   const { runContractFunction } = useWeb3Contract();
+  const [files, setFiles] = useState([]);
+  const [storeFieldMessage, setStoreFieldMessage] = useState("");
+  const [getFieldMessage, setGetFieldMessage] = useState("");
+  const [getFieldOutput, setGetFieldOutput] = useState("");
+  const [getAllFieldMessage, setGetAllFieldMessage] = useState("");
 
   async function storeFileOnChain() {
     if (
@@ -146,32 +152,59 @@ export default function Home() {
         },
       };
       runContractFunction({
-        onSuccess: async (results) =>
-          console.log("Transaction Object => ", results),
+        onSuccess: (results) => {
+          console.log("Transaction Object => ", results);
+          setStoreFieldMessage(`Successfully Stored File! ${results.hash}`);
+          document.getElementById("name").value = "";
+          document.getElementById("age").value = "";
+          document.getElementById("gpa").value = "";
+          document.getElementById("grade").value = "";
+        },
+        onError: (error) => {
+          console.log(`ERROR => ${error.message}`);
+          setStoreFieldMessage(error.message.toUpperCase());
+        },
         params: storeFileOptions,
       });
 
       // SET CID FIELD TO VALUE
-      document.getElementById("cid").value = cid;
-    } else console.log("PLEASE FILL OUT INPUT FIELDS");
+      document.getElementById("cid").value = cid.toString();
+    } else setStoreFieldMessage("Please Fill Out Input Fields");
   }
 
   async function getFileOnChain() {
     // GET FILE IN SMART CONTRACT ON BLOCKCHAIN
-    if (document.getElementById("cid").value !== undefined) {
-      const getFileOptions = {
-        abi: abi,
-        contractAddress: contractAddress,
-        functionName: "getFile",
-        params: {
-          cid: document.getElementById("cid").value,
-        },
-      };
-      runContractFunction({
-        onSuccess: (results) => console.log(`URL (getFile) => ${results}`),
-        params: getFileOptions,
-      });
-    } else console.log("EMPTY FIELD");
+    const getFileOptions = {
+      abi: abi,
+      contractAddress: contractAddress,
+      functionName: "getFile",
+      params: {
+        cid: document.getElementById("cid").value,
+      },
+    };
+    runContractFunction({
+      onSuccess: (results) => {
+        console.log(`URL (getFile) => ${results}`);
+        setGetFieldMessage("");
+        setGetFieldOutput(results);
+      },
+      onError: (error) => {
+        console.log(`ERROR => ${error}`);
+        setGetFieldMessage(
+          error
+            .toString()
+            .split(" ")
+            .map((w, i) =>
+              i === 0
+                ? w.toUpperCase()
+                : w.charAt(0).toUpperCase().concat(w.substring(1))
+            )
+            .join(" ")
+        );
+        setGetFieldOutput("");
+      },
+      params: getFileOptions,
+    });
   }
 
   async function getAllFilesOnChain() {
@@ -184,9 +217,16 @@ export default function Home() {
     runContractFunction({
       onSuccess: (results) => {
         console.log("All Files (getAllFiles) => ");
-        for (let i = 0; i < results.length; i++) {
-          console.log(`${i} : ${results[i]}`);
+        if (results.length > 0) {
+          results.map((file, index) =>
+            console.log(`${index} - CID: ${file.cid} URL: ${file.url}`)
+          );
+          setFiles(results);
         }
+      },
+      onError: (error) => {
+        console.log(`ERROR => ${error}`);
+        setGetAllFieldMessage(error);
       },
       params: getAllFilesOptions,
     });
@@ -196,7 +236,11 @@ export default function Home() {
     <div>
       {isWeb3Enabled ? (
         <>
+          {/* STORE FILE COMPONENT */}
           <div id="storeFields">
+            <div>
+              <h4>{storeFieldMessage}</h4>
+            </div>
             <div>
               <label>Name: </label>
               <input type="text" id="name" size={15} />
@@ -215,21 +259,43 @@ export default function Home() {
             </div>
             <button onClick={() => storeFileOnChain()}>Store File</button>
           </div>
+          {/* GET FILE COMPONENT */}
           <div id="getField">
+            <div>
+              <h4>{getFieldMessage}</h4>
+            </div>
             <div>
               <label>CID: </label>
               <input type="text" id="cid" size={60} />
             </div>
             <div>
+              <p>{getFieldOutput}</p>
+            </div>
+            <div>
               <button onClick={() => getFileOnChain()}>Get File</button>
             </div>
           </div>
+          {/* GET ALL FILES COMPONENT */}
           <div>
-            <button onClick={() => getAllFilesOnChain()}>Get All Files</button>
+            <div>{getAllFieldMessage}</div>
+            <div>
+              <button onClick={() => getAllFilesOnChain()}>
+                Get All Files
+              </button>
+            </div>
+            <div>
+              {files.map((file, index) => (
+                <>
+                  <h4>File #{++index}</h4>
+                  <p>CID : {file.cid}</p>
+                  <p>URL : {file.url}</p>
+                </>
+              ))}
+            </div>
           </div>
         </>
       ) : (
-        <button onClick={() => enableWeb3()}>Connect</button>
+        <button onClick={() => enableWeb3()}>Connect Metamask</button>
       )}
     </div>
   );
