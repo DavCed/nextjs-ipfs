@@ -217,12 +217,10 @@ export default function Home() {
     runContractFunction({
       onSuccess: (results) => {
         console.log("All Files (getAllFiles) => ");
-        if (results.length > 0) {
-          results.map((file, index) =>
-            console.log(`${index} - CID: ${file.cid} URL: ${file.url}`)
-          );
-          setFiles(results);
-        }
+        results.map((file, index) =>
+          console.log(`${index} - CID: ${file.cid} URL: ${file.url}`)
+        );
+        setFiles(results);
       },
       onError: (error) => {
         console.log(`ERROR => ${error}`);
@@ -283,15 +281,13 @@ export default function Home() {
                 Get All Files
               </button>
             </div>
-            <div>
-              {files.map((file, index) => (
-                <>
-                  <h4>File #{++index}</h4>
-                  <p>CID : {file.cid}</p>
-                  <p>URL : {file.url}</p>
-                </>
-              ))}
-            </div>
+            {files.map((file, index) => (
+              <div key={++index}>
+                <h4>File #{++index}</h4>
+                <p>CID : {file.cid}</p>
+                <p>URL : {file.url}</p>
+              </div>
+            ))}
           </div>
         </>
       ) : (
