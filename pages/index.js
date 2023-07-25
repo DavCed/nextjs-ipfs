@@ -123,12 +123,12 @@ export default function Home() {
       document.getElementById("grade").value.length > 0
     ) {
       // CONSTRUCT OBJECT FROM INPUT FIELDS
-      const studentObj = {
+      const studentObj = JSON.stringify({
         name: document.getElementById("name").value,
         age: document.getElementById("age").value,
         gpa: document.getElementById("gpa").value,
         grade: document.getElementById("grade").value,
-      };
+      });
 
       // STORE IN HELIA IPFS
       const heliaNode = await createHelia();
@@ -136,7 +136,7 @@ export default function Home() {
       const cid = await jsonObj.add(studentObj);
       const studentHelia = await jsonObj.get(cid);
       heliaNode.stop();
-      const url = `http://ipfs.io/ipfs/${cid}`;
+      const url = `https://ipfs.io/ipfs/${cid}`;
       console.log(`CID (storeFile) => ${cid.toString()}`);
       console.log(`URL (storeFile) => ${url}`);
       console.log("Student Object => ", studentHelia);
@@ -172,7 +172,7 @@ export default function Home() {
     } else setStoreFieldMessage("Please Fill Out Input Fields");
   }
 
-  async function getFileOnChain() {
+  function getFileOnChain() {
     // GET FILE IN SMART CONTRACT ON BLOCKCHAIN
     const getFileOptions = {
       abi: abi,
@@ -207,7 +207,7 @@ export default function Home() {
     });
   }
 
-  async function getAllFilesOnChain() {
+  function getAllFilesOnChain() {
     // GET ALL FILES IN SMART CONTRACT ON BLOCKCHAIN
     const getAllFilesOptions = {
       abi: abi,
