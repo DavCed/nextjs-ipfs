@@ -3,6 +3,7 @@ import { StoreFile } from "./components/store-file";
 import { GetFile } from "./components/get-file";
 import { GetAll } from "./components/get-all";
 import { React } from "react";
+import { RemoveAll } from "./components/remove-all";
 
 export default function Home() {
   /* THIRD METHOD TO CONNECT TO BLOCKCHAIN NETWORK */
@@ -15,6 +16,7 @@ export default function Home() {
           <StoreFile />
           <GetFile />
           <GetAll />
+          <RemoveAll />
         </>
       ) : (
         <button onClick={() => enableWeb3()}>Connect Metamask</button>

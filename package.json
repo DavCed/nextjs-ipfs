@@ -35,6 +35,7 @@
     "next": "13.4.11",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-moralis": "^1.4.2"
+    "react-moralis": "^1.4.2",
+    "web3.storage": "^4.5.5"
   }
 }

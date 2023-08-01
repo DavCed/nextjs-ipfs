@@ -1,65 +1,75 @@
-import { abi, contractAddress } from "../constants/config";
 import { useState, React } from "react";
 import { useWeb3Contract } from "react-moralis";
-import { helia2, cidJSON } from "./store-file";
+import { CONTRACT_ABI, CONTRACT_ADDRESS } from "@/environment.js";
 
 export function GetFile() {
   const { runContractFunction } = useWeb3Contract();
   const [getFieldMessage, setGetFieldMessage] = useState("");
-  const [getFieldOutput, setGetFieldOutput] = useState("");
+  const [getFieldOutput, setGetFieldOutput] = useState([]);
 
-  function getFileOnChain() {
-    if (document.getElementById("cid").value.length > 0) {
-      if (cidJSON.toString().length > 0) {
-        /* GET FILE IN SMART CONTRACT ON BLOCKCHAIN */
-        const getFileOptions = {
-          abi: abi,
-          contractAddress: contractAddress,
-          functionName: "getFile",
-          params: {
-            cid: document.getElementById("cid").value.toString(),
-          },
-        };
-        runContractFunction({
-          onSuccess: async (results) => {
-            console.log(`URL (getFile) => ${results}`);
-            setGetFieldMessage("");
-            setGetFieldOutput(
-              new TextDecoder().decode(await helia2.blockstore.get(cidJSON)) +
-                "\n" +
-                results
-            );
-          },
-          onError: (error) => {
-            console.log(`ERROR => ${error}`);
-          },
-          params: getFileOptions,
-        });
-      } else {
-        setGetFieldMessage("CID is not stored in Helia");
-        setGetFieldOutput("");
-      }
-    } else {
-      setGetFieldMessage("CID is required");
-      setGetFieldOutput("");
-    }
+  async function getFileOnChain() {
+    /* GET FILE IN SMART CONTRACT ON BLOCKCHAIN */
+    const getFileOptions = {
+      abi: CONTRACT_ABI,
+      contractAddress: CONTRACT_ADDRESS,
+      functionName: "getFile",
+      params: {
+        cid: document.getElementById("cid").value,
+      },
+    };
+    runContractFunction({
+      onSuccess: async (results) => {
+        console.log(`FILE URL (getFile) => ${results}`);
+        /* GET FILE FROM WEB3 STORAGE IPFS */
+        const res = await fetch(results);
+        const studentObj = await res.json();
+        console.log("STUDENT OBJECT (getFile) => ", studentObj);
+        setGetFieldMessage("");
+        setGetFieldOutput([
+          "Name: " + studentObj.name,
+          "Age: " + studentObj.age,
+          "GPA: " + studentObj.gpa,
+          "Grade: " + studentObj.grade,
+        ]);
+      },
+      onError: (error) => {
+        console.log(`ERROR => ${error}`);
+        setGetFieldMessage(
+          error
+            .toString()
+            .split(" ")
+            .map((w, i) =>
+              i == 0
+                ? w.toUpperCase() + " "
+                : w.charAt(0).toUpperCase() + w.substring(1) + " "
+            )
+        );
+        setGetFieldOutput([]);
+      },
+      params: getFileOptions,
+    });
   }
 
   return (
-    <div id="getField">
+    <>
+      <br />
       <div>
-        <h4>{getFieldMessage}</h4>
+        <div>
+          <h4>{getFieldMessage}</h4>
+        </div>
+        <div>
+          <label>CID: </label>
+          <input type="text" id="cid" size={60} />
+        </div>
+        <div>
+          {getFieldOutput.map((ele, index) => (
+            <p key={index}>{ele}</p>
+          ))}
+        </div>
+        <div>
+          <button onClick={() => getFileOnChain()}>Get File</button>
+        </div>
       </div>
-      <div>
-        <label>CID: </label>
-        <input type="text" id="cid" size={60} />
-      </div>
-      <div>
-        <p>{getFieldOutput}</p>
-      </div>
-      <div>
-        <button onClick={() => getFileOnChain()}>Get File</button>
-      </div>
-    </div>
+    </>
   );
 }
