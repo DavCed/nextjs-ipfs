@@ -17,19 +17,16 @@ export function GetAll() {
     runContractFunction({
       onSuccess: async (results) => {
         console.log("All Files (getAllFiles) => ");
-        results
-          .map(async (file, index) => {
-            const res = await fetch(file.url);
-            const studentObj = await res.json();
-            console.log(
-              `${index} - CID: ${file.cid} URL: ${
-                file.url
-              } STUDENT: ${JSON.stringify(studentObj)}`
-            );
-          })
-          .push("cid", "url");
+        results.map(async (file, index) => {
+          const res = await fetch(file.url);
+          const studentObj = await res.json();
+          console.log(
+            `${index} - CID: ${file.cid} URL: ${
+              file.url
+            } STUDENT: ${JSON.stringify(studentObj)}`
+          );
+        });
         setFiles(results);
-        console.log(results);
       },
       onError: (error) => {
         console.log(`ERROR => ${error}`);

@@ -8,10 +8,10 @@ export function RemoveAll() {
 
   async function removeAllFilesOnChain() {
     /* REMOVE FILES IN SMART CONTRACT ON BLOCKCHAIN */
-    const removeFileOptions = {
+    const removeAllFileOptions = {
       abi: CONTRACT_ABI,
       contractAddress: CONTRACT_ADDRESS,
-      functionName: "removeFiles",
+      functionName: "removeAllFiles",
     };
     runContractFunction({
       onSuccess: async (results) => {
@@ -22,7 +22,7 @@ export function RemoveAll() {
         console.log(`ERROR => ${error}`);
         setRemoveAllFieldMessage(error.message);
       },
-      params: removeFileOptions,
+      params: removeAllFileOptions,
     });
   }
 
