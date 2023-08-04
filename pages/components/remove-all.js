@@ -6,20 +6,20 @@ export function RemoveAll() {
   const { runContractFunction } = useWeb3Contract();
   const [removeAllFieldMessage, setRemoveAllFieldMessage] = useState("");
 
-  async function removeAllFilesOnChain() {
-    /* REMOVE FILES IN SMART CONTRACT ON BLOCKCHAIN */
+  /* REMOVE FILES IN SMART CONTRACT ON BLOCKCHAIN */
+  function removeAllFilesOnChain() {
     const removeAllFileOptions = {
       abi: CONTRACT_ABI,
       contractAddress: CONTRACT_ADDRESS,
       functionName: "removeAllFiles",
     };
     runContractFunction({
-      onSuccess: async (results) => {
+      onSuccess: (results) => {
         console.log("TRANSACTION OBJECT (removeFiles) => ", results);
         setRemoveAllFieldMessage("");
       },
       onError: (error) => {
-        console.log(`ERROR => ${error}`);
+        console.log("ERROR => ", error);
         setRemoveAllFieldMessage(error.message);
       },
       params: removeAllFileOptions,

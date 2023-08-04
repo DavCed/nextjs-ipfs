@@ -7,47 +7,56 @@ export function GetFile() {
   const [getFieldMessage, setGetFieldMessage] = useState("");
   const [getFieldOutput, setGetFieldOutput] = useState([]);
 
-  async function getFileOnChain() {
-    /* GET FILE IN SMART CONTRACT ON BLOCKCHAIN */
+  /* GET FILE FROM WEB3 STORAGE IPFS */
+  async function getFileFromIPFS(url) {
+    const res = await fetch(url);
+    const studentObj = await res.json();
+    console.log("STUDENT OBJECT (getFile) => ", studentObj);
+    return studentObj;
+  }
+
+  /* GET FILE IN SMART CONTRACT ON BLOCKCHAIN */
+  async function getFileOnChain(cid) {
     const getFileOptions = {
       abi: CONTRACT_ABI,
       contractAddress: CONTRACT_ADDRESS,
       functionName: "getFile",
       params: {
-        cid: document.getElementById("cid").value,
+        cid: cid,
       },
     };
     runContractFunction({
       onSuccess: async (results) => {
         console.log(`FILE URL (getFile) => ${results}`);
-        /* GET FILE FROM WEB3 STORAGE IPFS */
-        const res = await fetch(results);
-        const studentObj = await res.json();
-        console.log("STUDENT OBJECT (getFile) => ", studentObj);
+        const studentObj = await getFileFromIPFS(results);
         setGetFieldMessage("");
-        setGetFieldOutput([
-          "Name: " + studentObj.name,
-          "Age: " + studentObj.age,
-          "GPA: " + studentObj.gpa,
-          "Grade: " + studentObj.grade,
-        ]);
+        setOutputInGetField(studentObj);
       },
       onError: (error) => {
         console.log(`ERROR => ${error}`);
-        setGetFieldMessage(
-          error
-            .toString()
-            .split(" ")
-            .map((w, i) =>
-              i == 0
-                ? w.toUpperCase() + " "
-                : w.charAt(0).toUpperCase() + w.substring(1) + " "
-            )
-        );
+        setGetFieldMessage(error);
         setGetFieldOutput([]);
       },
       params: getFileOptions,
     });
+  }
+
+  /* SET OUTPUT DATA ON UI */
+  function setOutputInGetField(student) {
+    let studentArr = [];
+    for (let [key, value] of Object.entries(student)) {
+      studentArr.push(
+        key.charAt(0).toUpperCase() + key.substring(1) + ": " + value
+      );
+    }
+    setGetFieldOutput(studentArr);
+  }
+
+  /* GET FILE WITH CID VALUE */
+  async function getFileByCID() {
+    document.getElementById("cid").value.length > 0
+      ? await getFileOnChain(document.getElementById("cid").value)
+      : setGetFieldMessage("CID is required");
   }
 
   return (
@@ -67,7 +76,7 @@ export function GetFile() {
           ))}
         </div>
         <div>
-          <button onClick={() => getFileOnChain()}>Get File</button>
+          <button onClick={() => getFileByCID()}>Get File</button>
         </div>
       </div>
     </>

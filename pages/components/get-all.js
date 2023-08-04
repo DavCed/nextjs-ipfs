@@ -7,25 +7,17 @@ export function GetAll() {
   const [getAllFieldMessage, setGetAllFieldMessage] = useState("");
   const [files, setFiles] = useState([]);
 
+  /* GET ALL FILES IN SMART CONTRACT ON BLOCKCHAIN */
   function getAllFilesOnChain() {
-    /* GET ALL FILES IN SMART CONTRACT ON BLOCKCHAIN */
     const getAllFilesOptions = {
       abi: CONTRACT_ABI,
       contractAddress: CONTRACT_ADDRESS,
       functionName: "getAllFiles",
     };
     runContractFunction({
-      onSuccess: async (results) => {
+      onSuccess: (results) => {
         console.log("All Files (getAllFiles) => ");
-        results.map(async (file, index) => {
-          const res = await fetch(file.url);
-          const studentObj = await res.json();
-          console.log(
-            `${index} - CID: ${file.cid} URL: ${
-              file.url
-            } STUDENT: ${JSON.stringify(studentObj)}`
-          );
-        });
+        results.map((file) => console.log(`CID: ${file.cid} URL: ${file.url}`));
         setFiles(results);
       },
       onError: (error) => {
