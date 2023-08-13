@@ -1,37 +1,98 @@
 import { useState, React } from "react";
 import { useWeb3Contract } from "react-moralis";
-import { File, Web3Storage } from "web3.storage";
-import { API_TOKEN, CONTRACT_ABI, CONTRACT_ADDRESS } from "@/environment.js";
+import { Loader } from "../loader";
+import { WEB3_CLIENT, CONTRACT_ABI, CONTRACT_ADDRESS } from "@/environment.js";
 
 export function StoreFile() {
   const { runContractFunction } = useWeb3Contract();
   const [storeFieldMessage, setStoreFieldMessage] = useState("");
+  const [folderCidField, setFolderCidField] = useState("");
+  const [fileCidField, setFileCidField] = useState("");
+  const [multipleFiles, setMultipleFiles] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  /* STORE IN WEB3 STORAGE IPFS */
-  async function storeInIPFS(file) {
-    const storage = new Web3Storage({ token: API_TOKEN });
-    const cidWeb3 = await storage.put([file]);
-    const fileUrlWeb3 = `https://${cidWeb3}.ipfs.dweb.link/student.json`;
-    const folderUrlWeb3 = `https://dweb.link/ipfs/${cidWeb3}`;
-    console.log(`FILE URL (storeFile) => ${fileUrlWeb3}`);
-    console.log(`FOLDER URL (storeFile) => ${folderUrlWeb3}`);
-    return [cidWeb3.toString(), fileUrlWeb3];
+  /* STORE IN WEB3 STORAGE IPFS SINGLE FILE */
+  async function storeSingleFileIPFS(file) {
+    const cidWeb3 = await WEB3_CLIENT.put([file]);
+    const fileUrlWeb3 = `https://${cidWeb3}.ipfs.dweb.link/${file.name}`;
+    console.log(`FILE URL (storeSingleFile) => ${fileUrlWeb3}`);
+    return {
+      cid: cidWeb3.toString(),
+      url: fileUrlWeb3,
+    };
   }
 
-  /* STORE IN SMART CONTRACT ON BLOCKCHAIN NETWORK */
-  async function storeFileOnChain(cid, url, fileUploaded) {
-    const storeFileOptions = {
+  /* STORE IN WEB3 STORAGE IPFS MULTIPLE FILES */
+  async function storeMultipleFilesIPFS(files) {
+    const cidWeb3 = await WEB3_CLIENT.put(files);
+    const folderUrlWeb3 = `https://dweb.link/ipfs/${cidWeb3}`;
+    console.log(`FOLDER URL (storeMultipleFiles) => ${folderUrlWeb3}`);
+    return {
+      cid: cidWeb3.toString(),
+      url: folderUrlWeb3,
+    };
+  }
+
+  /* CONSTRUCT FILES ARRAY */
+  async function constructFilesArr(dataObj) {
+    let filesArr = [];
+    const response = await WEB3_CLIENT.get(dataObj.cid);
+    const web3Files = await response.files();
+    for (const web3File of web3Files) {
+      filesArr.push({
+        cid: web3File.cid,
+        url: `https://${web3File.cid}.ipfs.dweb.link/`,
+      });
+    }
+    console.log(filesArr);
+    return filesArr;
+  }
+
+  /* STORE FILE WITH UPLOAD */
+  async function storeUploadedFiles() {
+    const files = await document.getElementById("files").files;
+    console.log("FILES ARRAY => ", files);
+    if (files.length === 0) {
+      setFolderCidField("");
+      setFileCidField("");
+      setMultipleFiles([]);
+      setStoreFieldMessage("Please select files");
+    } else {
+      let dataObj;
+      setIsLoading(false);
+      if (files.length >= 2) {
+        dataObj = await storeMultipleFilesIPFS(files);
+        const filesArr = await constructFilesArr(dataObj);
+        setFolderCidField("Folder CID: " + dataObj.cid);
+        setFileCidField("Files CIDs: ");
+        setMultipleFiles(filesArr);
+        await storeMulipleFilesOnChain(filesArr);
+      } else {
+        dataObj = await storeSingleFileIPFS(files[0]);
+        setFolderCidField("");
+        setFileCidField("File CID: " + dataObj.cid);
+        setMultipleFiles([]);
+        await storeSingleFileOnChain(dataObj.cid, dataObj.url);
+      }
+      setStoreFieldMessage("");
+    }
+  }
+
+  /* STORE SINGLE FILE IN SMART CONTRACT ON BLOCKCHAIN NETWORK */
+  async function storeSingleFileOnChain(cid, url) {
+    const storeSingleFileOptions = {
       abi: CONTRACT_ABI,
       contractAddress: CONTRACT_ADDRESS,
-      functionName: "storeFile",
+      functionName: "storeSingleFile",
       params: {
         cid: cid,
         url: url,
       },
     };
-    runContractFunction({
+    setIsLoading(true);
+    await runContractFunction({
       onSuccess: (results) => {
-        console.log("TRANSACTION OBJECT (storeFile) => ", results);
+        console.log("TRANSACTION OBJECT (storeSingleFile) => ", results);
         setStoreFieldMessage(`Successfully stored file! ${results.hash}`);
       },
       onError: (error) => {
@@ -39,58 +100,37 @@ export function StoreFile() {
         setStoreFieldMessage(error.message);
       },
       onComplete: () => {
-        if (!fileUploaded) {
-          resetInputFields();
-        } else document.getElementById("files").value = "";
+        document.getElementById("files").value = "";
       },
-      params: storeFileOptions,
+      params: storeSingleFileOptions,
     });
   }
 
-  /* STORE FILE WITH UPLOAD */
-  async function storeUploadedFile() {
-    const files = await document.getElementById("files").files;
-    console.log("FILES ARRAY => ", files);
-    if (files.length > 0) {
-      const dataArr = await storeInIPFS(files[0]);
-      document.getElementById("cid").value = dataArr[0];
-      await storeFileOnChain(dataArr[0], dataArr[1], true);
-      setStoreFieldMessage("");
-    } else setStoreFieldMessage("Please upload a file");
-  }
-
-  /* STORE FILE WITH INPUT FIELDS */
-  async function storeEnteredFile() {
-    if (
-      document.getElementById("name").value.length > 0 &&
-      document.getElementById("age").value.length > 0 &&
-      document.getElementById("gpa").value.length > 0 &&
-      document.getElementById("grade").value.length > 0
-    ) {
-      const student = constructJSONObject();
-      const file = new File([student], "student.json", { type: "json" });
-      const dataArr = await storeInIPFS(file);
-      document.getElementById("cid").value = dataArr[0].toString();
-      await storeFileOnChain(dataArr[0], dataArr[1], false);
-    } else setStoreFieldMessage("Please fill out input fields");
-  }
-
-  /* CONSTRUCT STUDENT OBJECT FROM INPUT FIELDS */
-  function constructJSONObject() {
-    return JSON.stringify({
-      name: document.getElementById("name").value,
-      age: document.getElementById("age").value,
-      gpa: document.getElementById("gpa").value,
-      grade: document.getElementById("grade").value,
+  /* STORE MULTIPLE FILES IN SMART CONTRACT ON BLOCKCHAIN NETWORK */
+  async function storeMulipleFilesOnChain(fileArr) {
+    const storeMultipleFilesOptions = {
+      abi: CONTRACT_ABI,
+      contractAddress: CONTRACT_ADDRESS,
+      functionName: "storeMultipleFiles",
+      params: {
+        files: fileArr,
+      },
+    };
+    setIsLoading(true);
+    await runContractFunction({
+      onSuccess: (results) => {
+        console.log("TRANSACTION OBJECT (storeMultipleFiles) => ", results);
+        setStoreFieldMessage(`Successfully stored files! ${results.hash}`);
+      },
+      onError: (error) => {
+        console.log(`ERROR => ${error.message}`);
+        setStoreFieldMessage(error.message);
+      },
+      onComplete: () => {
+        document.getElementById("files").value = "";
+      },
+      params: storeMultipleFilesOptions,
     });
-  }
-
-  /* SET BLANK INPUT FIELDS */
-  function resetInputFields() {
-    document.getElementById("name").value = "";
-    document.getElementById("age").value = "";
-    document.getElementById("gpa").value = "";
-    document.getElementById("grade").value = "";
   }
 
   return (
@@ -98,28 +138,22 @@ export function StoreFile() {
       <h4>{storeFieldMessage}</h4>
       <div>
         <div>
-          <input type="file" id="files" />
+          <input type="file" id="files" multiple />
         </div>
-        <button onClick={() => storeUploadedFile()}>Store Uploaded File</button>
+        <p>{folderCidField}</p>
+        <div>
+          <p>{fileCidField}</p>
+          {multipleFiles.map((file, index) => (
+            <p key={index}>{file.cid}</p>
+          ))}
+        </div>
+        <div hidden={isLoading}>
+          <Loader />
+        </div>
+        <button onClick={() => storeUploadedFiles()}>
+          Store Uploaded Files
+        </button>
       </div>
-      <br />
-      <div>
-        <label>Name: </label>
-        <input type="text" id="name" size={15} />
-      </div>
-      <div>
-        <label>Age: </label>
-        <input type="text" id="age" size={1} />
-      </div>
-      <div>
-        <label>Gpa: </label>
-        <input type="text" id="gpa" size={1} />
-      </div>
-      <div>
-        <label>Grade: </label>
-        <input type="text" id="grade" size={8} />
-      </div>
-      <button onClick={() => storeEnteredFile()}>Store Entered File</button>
     </div>
   );
 }

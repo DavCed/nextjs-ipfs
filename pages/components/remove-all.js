@@ -15,7 +15,7 @@ export function RemoveAll() {
     };
     runContractFunction({
       onSuccess: (results) => {
-        console.log("TRANSACTION OBJECT (removeFiles) => ", results);
+        console.log("TRANSACTION OBJECT (removeAllFiles) => ", results);
         setRemoveAllFieldMessage("");
       },
       onError: (error) => {
