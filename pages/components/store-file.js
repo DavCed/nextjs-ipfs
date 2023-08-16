@@ -41,7 +41,7 @@ export function StoreFile() {
     for (const web3File of web3Files) {
       filesArr.push({
         cid: web3File.cid,
-        url: `https://${web3File.cid}.ipfs.dweb.link/`,
+        url: `https://${web3File.cid}.ipfs.dweb.link/${web3File.name}`,
       });
     }
     console.log(filesArr);
