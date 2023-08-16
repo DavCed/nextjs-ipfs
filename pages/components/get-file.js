@@ -1,29 +1,18 @@
 import { useState, React } from "react";
 import { useWeb3Contract } from "react-moralis";
-import { WEB3_CLIENT, CONTRACT_ABI, CONTRACT_ADDRESS } from "@/environment.js";
+import { CONTRACT_ABI, CONTRACT_ADDRESS } from "@/environment.js";
 
 export function GetFile() {
   const { runContractFunction } = useWeb3Contract();
   const [getFieldMessage, setGetFieldMessage] = useState("");
   const [getFieldOutput, setGetFieldOutput] = useState([]);
 
-  /* GET SINGLE FILE FROM WEB3 STORAGE IPFS */
-  async function getSingleFileFromIPFS(url) {
+  /* GET FILE FROM WEB3 STORAGE IPFS */
+  async function getFileFromIPFS(url) {
     const res = await fetch(url);
     const studentObj = await res.json();
     console.log("STUDENT OBJECT (getFile) => ", studentObj);
     return studentObj;
-  }
-
-  /* GET MULTIPLE FILES FROM WEB3 STORAGE IPFS */
-  async function getMultipleFilesFromIPFS(cid) {
-    let studentObjArr = [];
-    const response = await WEB3_CLIENT.get(cid);
-    const web3Files = await response.files();
-    for (const web3File of web3Files) {
-      studentObjArr.push(await web3File.text());
-    }
-    return studentObjArr;
   }
 
   /* SET OUTPUT DATA ON UI */
@@ -45,7 +34,7 @@ export function GetFile() {
     setGetFieldOutput([]);
   }
 
-  /* GET FILE IN SMART CONTRACT ON BLOCKCHAIN */
+  /* GET FILE ON BLOCKCHAIN */
   async function getFileOnChain(cid) {
     const getFileOptions = {
       abi: CONTRACT_ABI,
@@ -62,13 +51,8 @@ export function GetFile() {
           setGetFieldMessage("No file stored");
           setGetFieldOutput([]);
         } else {
-          if (results === `https://dweb.link/ipfs/${cid}`) {
-            const studentObjArr = await getMultipleFilesFromIPFS(cid);
-            setGetFieldOutput(studentObjArr);
-          } else {
-            const studentObj = await getSingleFileFromIPFS(results);
-            printOutput(studentObj);
-          }
+          const studentObj = await getFileFromIPFS(results);
+          printOutput(studentObj);
           setGetFieldMessage("");
         }
       },

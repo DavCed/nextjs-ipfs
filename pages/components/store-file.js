@@ -8,25 +8,14 @@ export function StoreFile() {
   const [storeFieldMessage, setStoreFieldMessage] = useState("");
   const [folderCidField, setFolderCidField] = useState("");
   const [fileCidField, setFileCidField] = useState("");
-  const [multipleFiles, setMultipleFiles] = useState([]);
+  const [files, setFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  /* STORE IN WEB3 STORAGE IPFS SINGLE FILE */
-  async function storeSingleFileIPFS(file) {
-    const cidWeb3 = await WEB3_CLIENT.put([file]);
-    const fileUrlWeb3 = `https://${cidWeb3}.ipfs.dweb.link/${file.name}`;
-    console.log(`FILE URL (storeSingleFile) => ${fileUrlWeb3}`);
-    return {
-      cid: cidWeb3.toString(),
-      url: fileUrlWeb3,
-    };
-  }
-
-  /* STORE IN WEB3 STORAGE IPFS MULTIPLE FILES */
-  async function storeMultipleFilesIPFS(files) {
+  /* STORE FILES IN WEB3 STORAGE IPFS */
+  async function storeFilesInIPFS(files) {
     const cidWeb3 = await WEB3_CLIENT.put(files);
     const folderUrlWeb3 = `https://dweb.link/ipfs/${cidWeb3}`;
-    console.log(`FOLDER URL (storeMultipleFiles) => ${folderUrlWeb3}`);
+    console.log(`FOLDER URL (storeFiles) => ${folderUrlWeb3}`);
     return {
       cid: cidWeb3.toString(),
       url: folderUrlWeb3,
@@ -41,77 +30,40 @@ export function StoreFile() {
     for (const web3File of web3Files) {
       filesArr.push({
         cid: web3File.cid,
-        url: `https://${web3File.cid}.ipfs.dweb.link/${web3File.name}`,
+        url: `https://${web3File.cid}.ipfs.dweb.link/`,
       });
     }
     console.log(filesArr);
     return filesArr;
   }
 
-  /* STORE FILE WITH UPLOAD */
-  async function storeUploadedFiles() {
+  /* STORE FILES */
+  async function storeFiles() {
     const files = await document.getElementById("files").files;
     console.log("FILES ARRAY => ", files);
     if (files.length === 0) {
       setFolderCidField("");
       setFileCidField("");
-      setMultipleFiles([]);
+      setFiles([]);
       setStoreFieldMessage("Please select files");
     } else {
-      let dataObj;
       setIsLoading(false);
-      if (files.length >= 2) {
-        dataObj = await storeMultipleFilesIPFS(files);
-        const filesArr = await constructFilesArr(dataObj);
-        setFolderCidField("Folder CID: " + dataObj.cid);
-        setFileCidField("Files CIDs: ");
-        setMultipleFiles(filesArr);
-        await storeMulipleFilesOnChain(filesArr);
-      } else {
-        dataObj = await storeSingleFileIPFS(files[0]);
-        setFolderCidField("");
-        setFileCidField("File CID: " + dataObj.cid);
-        setMultipleFiles([]);
-        await storeSingleFileOnChain(dataObj.cid, dataObj.url);
-      }
+      const dataObj = await storeFilesInIPFS(files);
+      const filesArr = await constructFilesArr(dataObj);
+      setFolderCidField("Folder CID: " + dataObj.cid);
+      setFileCidField("Files CIDs: ");
+      setFiles(filesArr);
+      await storeFilesOnChain(filesArr);
       setStoreFieldMessage("");
     }
   }
 
-  /* STORE SINGLE FILE IN SMART CONTRACT ON BLOCKCHAIN NETWORK */
-  async function storeSingleFileOnChain(cid, url) {
-    const storeSingleFileOptions = {
+  /* STORE FILES ON BLOCKCHAIN */
+  async function storeFilesOnChain(fileArr) {
+    const storeFilesOptions = {
       abi: CONTRACT_ABI,
       contractAddress: CONTRACT_ADDRESS,
-      functionName: "storeSingleFile",
-      params: {
-        cid: cid,
-        url: url,
-      },
-    };
-    setIsLoading(true);
-    await runContractFunction({
-      onSuccess: (results) => {
-        console.log("TRANSACTION OBJECT (storeSingleFile) => ", results);
-        setStoreFieldMessage(`Successfully stored file! ${results.hash}`);
-      },
-      onError: (error) => {
-        console.log(`ERROR => ${error.message}`);
-        setStoreFieldMessage(error.message);
-      },
-      onComplete: () => {
-        document.getElementById("files").value = "";
-      },
-      params: storeSingleFileOptions,
-    });
-  }
-
-  /* STORE MULTIPLE FILES IN SMART CONTRACT ON BLOCKCHAIN NETWORK */
-  async function storeMulipleFilesOnChain(fileArr) {
-    const storeMultipleFilesOptions = {
-      abi: CONTRACT_ABI,
-      contractAddress: CONTRACT_ADDRESS,
-      functionName: "storeMultipleFiles",
+      functionName: "storeFiles",
       params: {
         files: fileArr,
       },
@@ -119,7 +71,7 @@ export function StoreFile() {
     setIsLoading(true);
     await runContractFunction({
       onSuccess: (results) => {
-        console.log("TRANSACTION OBJECT (storeMultipleFiles) => ", results);
+        console.log("TRANSACTION OBJECT (storeFiles) => ", results);
         setStoreFieldMessage(`Successfully stored files! ${results.hash}`);
       },
       onError: (error) => {
@@ -129,7 +81,7 @@ export function StoreFile() {
       onComplete: () => {
         document.getElementById("files").value = "";
       },
-      params: storeMultipleFilesOptions,
+      params: storeFilesOptions,
     });
   }
 
@@ -143,16 +95,14 @@ export function StoreFile() {
         <p>{folderCidField}</p>
         <div>
           <p>{fileCidField}</p>
-          {multipleFiles.map((file, index) => (
+          {files.map((file, index) => (
             <p key={index}>{file.cid}</p>
           ))}
         </div>
         <div hidden={isLoading}>
           <Loader />
         </div>
-        <button onClick={() => storeUploadedFiles()}>
-          Store Uploaded Files
-        </button>
+        <button onClick={() => storeFiles()}>Store Files</button>
       </div>
     </div>
   );
