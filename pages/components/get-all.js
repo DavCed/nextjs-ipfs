@@ -43,29 +43,6 @@ export function GetAll() {
     return studentArr;
   }
 
-  /* GET ALL FILES IN SMART CONTRACT ON BLOCKCHAIN */
-  async function getAllFilesOnChain() {
-    const getAllFilesOptions = {
-      abi: CONTRACT_ABI,
-      contractAddress: CONTRACT_ADDRESS,
-      functionName: "getAllFiles",
-    };
-    await runContractFunction({
-      onSuccess: (results) => {
-        console.log("ALL FILES (getAllFiles) => ", results);
-        if (results.length === 0) {
-          setFiles([]);
-          setCount(0);
-        } else printFiles(results);
-      },
-      onError: (error) => {
-        console.log(`ERROR => ${error}`);
-        setGetAllFieldMessage(error);
-      },
-      params: getAllFilesOptions,
-    });
-  }
-
   /* PRINT ALL FILES FETCHED */
   function printFiles(filesOnChain) {
     filesOnChain.map(async (file) => {
@@ -90,6 +67,29 @@ export function GetAll() {
       }
       setFiles(allFiles);
       setCount(allFiles.length);
+    });
+  }
+
+  /* GET ALL FILES IN SMART CONTRACT ON BLOCKCHAIN */
+  async function getAllFilesOnChain() {
+    const getAllFilesOptions = {
+      abi: CONTRACT_ABI,
+      contractAddress: CONTRACT_ADDRESS,
+      functionName: "getAllFiles",
+    };
+    await runContractFunction({
+      onSuccess: (results) => {
+        console.log("ALL FILES (getAllFiles) => ", results);
+        if (results.length === 0) {
+          setFiles([]);
+          setCount(0);
+        } else printFiles(results);
+      },
+      onError: (error) => {
+        console.log(`ERROR => ${error}`);
+        setGetAllFieldMessage(error);
+      },
+      params: getAllFilesOptions,
     });
   }
 
