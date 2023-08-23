@@ -9,7 +9,7 @@ A full stack decentralized application developed with Javascript using the Web3 
 4. Get all files stored
 5. Remove all files stored (Removing of data is not possible but it is there if you desire to implement some functionality to it)
 
-## FrontEnd App
+## Frontend App
 ### Installation
 1. Create **_environment.js_** file in project root directory
 2. Set the following environment variables in that file
@@ -34,7 +34,7 @@ npm run dev
 ## Blockchain Network
 ### Installation
 1. Pick one smart contract development framework [Hardhat](https://hardhat.org/hardhat-runner/docs/getting-started#overview), [Truffle](https://trufflesuite.com/truffle/), or [Foundry](https://book.getfoundry.sh/)
-2. Create **_DistributedStorage.sol_** file as smart contract
+2. Create **_DistributedStorage.sol_** file as smart contract in framework project directory
 ```solidity
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
