@@ -19,12 +19,27 @@ export function GetAll() {
 
   /* GET OBJECT KEY/VALUE FIELDS IN ARRAY */
   function getStudentObjectArray(studentObj) {
+    const currDate = new Date();
+    const date =
+      currDate.getFullYear() +
+      "-" +
+      (currDate.getMonth() + 1) +
+      "-" +
+      currDate.getDate() +
+      " " +
+      currDate.getHours() +
+      ":" +
+      currDate.getMinutes() +
+      ":" +
+      currDate.getSeconds();
     let studentArr = [];
     for (let [key, value] of Object.entries(studentObj)) {
       studentArr.push(
         key.charAt(0).toUpperCase() + key.substring(1) + ": " + value
       );
     }
+    studentArr.push("Digital Signature: signature");
+    studentArr.push("Issued At: " + date);
     return studentArr;
   }
 
