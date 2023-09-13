@@ -25,7 +25,7 @@ export const WEB3_CLIENT = new Web3Storage({
   token: "", // Api Token
 });
 export const CONTRACT_ADDRESS = ""; // Contract address
-export const CONTRACT_ABI = ""; // Contract abi
+export const CONTRACT_ABI = []; // Contract abi
 ```
 
 **_NOTE:_**
